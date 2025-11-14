@@ -80,16 +80,48 @@ $$\frac{f(c) - f(d)}{c - d} \leq \frac{f(a) - f(b)}{a - b}$$
 \label{lem:schur_reduction}
 \lean{schur_convex_reduction_to_distinct}
 \leanok
+\uses{lem:slope_comparison}
 For decreasing vectors $x, y$ with $x_i \neq y_i$ for all $i$, if $x \preceq y$ then:
 $$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i)$$
 \end{lemma}
+
+\begin{proof}
+Let $f(t) = t \log(t)$. Define the slopes:
+$$c_i := \frac{f(x_i) - f(y_i)}{x_i - y_i} = \frac{x_i \log(x_i) - y_i \log(y_i)}{x_i - y_i}$$
+
+By Lemma~\ref{lem:slope_comparison} (convexity of $f$), the secant slopes are monotonically non-decreasing:
+$$c_{i+1} \leq c_i \quad \text{for all } i \in \{1, \ldots, n-1\}$$
+
+Define cumulative sums $A_0 = B_0 = 0$ and:
+$$A_i = \sum_{j=1}^i x_j, \quad B_i = \sum_{j=1}^i y_j$$
+
+By the majorization property, $A_i \geq B_i$ for all $i \in \{1, \ldots, n-1\}$ and $A_n = B_n$. Hence:
+\begin{align*}
+\sum_{i=1}^n (f(x_i) - f(y_i)) &= \sum_{i=1}^n c_i (x_i - y_i) \\
+&= \sum_{i=1}^n c_i (A_i - A_{i-1} - (B_i - B_{i-1})) \\
+&= \sum_{i=1}^n c_i (A_i - B_i) - \sum_{i=1}^n c_i (A_{i-1} - B_{i-1}) \\
+&= c_n(A_n - B_n) + \sum_{i=1}^{n-1} (c_i - c_{i+1})(A_i - B_i) - c_1(A_0 - B_0) \\
+&= 0 + \sum_{i=1}^{n-1} (c_i - c_{i+1})(A_i - B_i) - 0 \\
+&\geq 0
+\end{align*}
+The final inequality holds because $c_i - c_{i+1} \geq 0$ (slopes decrease) and $A_i - B_i \geq 0$ (majorization).
+\end{proof}
 
 \begin{theorem}
 \label{thm:schur_convex_xlogx}
 \lean{schur_convex_xlogx}
 \leanok
+\uses{lem:schur_reduction}
 The entropy function $f(x) = \sum_i x_i \log(x_i)$ is Schur-convex.
 \end{theorem}
+
+\begin{proof}
+We first reduce to decreasing vectors by sorting, which preserves both the majorization relation and the function value. 
+If $x_i = y_i$ for all $i$, the inequality holds with equality. Otherwise, if $x_i = y_i$ for some index $i$, we can 
+remove both $x_i$ and $y_i$ without affecting either the inequality or the majorization properties. Iterating this 
+removal process reduces to the case where $x_i \neq y_i$ for all $i$, to which Lemma~\ref{lem:schur_reduction} applies 
+directly.
+\end{proof}
 
 \begin{lemma}[Eigenvalue Bound from Inner Product]
 \label{lem:eigenvalue_bound}
