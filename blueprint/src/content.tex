@@ -1,7 +1,40 @@
 % Main content for QKD blueprint
 
-This blueprint documents the formalization of Peter Shor's quantum key distribution security result:
-high fidelity with a pure state implies bounded von Neumann entropy.
+This blueprint documents the formalization of \textbf{Lemma 1} from the seminal paper 
+\href{https://arxiv.org/abs/quant-ph/9802025}{\emph{Unconditional Security Of Quantum Key Distribution Over Arbitrarily Long Distances}} 
+by Lo and Chau (1998).
+
+The lemma establishes a fundamental result in quantum key distribution security: 
+high fidelity with a pure state implies bounded von Neumann entropy. 
+This formalization is expected to attract significant interest from the quantum cryptography community, 
+as it provides a machine-checked proof of a cornerstone result in the security analysis of quantum key distribution protocols.
+
+\bigskip
+
+\begin{center}
+\fbox{\begin{minipage}{0.95\textwidth}
+\vspace{0.5em}
+\noindent\textbf{\large Lemma 1 from Lo \& Chau (1998)}
+
+\vspace{0.5em}
+\noindent\textit{Supplementary Note 2:}
+
+\vspace{0.3em}
+\noindent\textbf{Lemma 1} (High fidelity implies low entropy): 
+
+If $\langle R \text{ singlets}|\rho|R \text{ singlets}\rangle > 1 - \delta$ where $\delta \ll 1$, then the von Neumann entropy 
+$$S(\rho) < -(1-\delta)\log_2(1-\delta) - \delta \log_2 \frac{\delta}{(2^{2R}-1)}$$
+
+\vspace{0.3em}
+\noindent\textbf{Proof:} If $\langle R \text{ singlets}|\rho|R \text{ singlets}\rangle > 1 - \delta$, then the largest eigenvalue of the density matrix 
+$\rho$ must be larger than $1-\delta$. The entropy of $\rho$ is, therefore, bounded above by that of 
+$$\rho_0 = \text{diag}\left\{1-\delta, \frac{\delta}{(2^{2R}-1)}, \frac{\delta}{(2^{2R}-1)}, \ldots, \frac{\delta}{(2^{2R}-1)}\right\}$$ 
+
+That is, $\rho_0$ is diagonal with a large entry $1-\delta$ and with the remaining probability $\delta$ equally distributed 
+between the remaining $2^{2R}-1$ possibilities. \hfill Q.E.D.
+\vspace{0.5em}
+\end{minipage}}
+\end{center}
 
 \bigskip
 
@@ -14,13 +47,23 @@ $$S(A) = -\sum_i \lambda_i \log(\lambda_i)$$
 where $\lambda_i$ are the eigenvalues of $A$.
 \end{definition}
 
-\begin{definition}
+\begin{definition}[Majorization Ordering]
+\label{def:majorization}
+For two vectors $x, y \in \mathbb{R}^n$ with non-negative entries, we say $x$ is \emph{majorized} by $y$, written $x \preceq y$, if:
+\begin{enumerate}
+\item After sorting both vectors in decreasing order to obtain $x^{\downarrow}$ and $y^{\downarrow}$, we have:
+$$\sum_{i=1}^k x^{\downarrow}_i \leq \sum_{i=1}^k y^{\downarrow}_i \quad \text{for all } k = 1, \ldots, n$$
+\item The total sums are equal: $\sum_{i=1}^n x_i = \sum_{i=1}^n y_i$
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Schur Convexity]
 \label{def:SchurConvex}
 \lean{SchurConvex}
 \leanok
 A function $f: \mathbb{R}^n \to \mathbb{R}$ is \emph{Schur-convex} if:
 $$x \preceq y \implies f(x) \leq f(y)$$
-where $\preceq$ denotes the majorization ordering.
+That is, $f$ preserves the majorization ordering.
 \end{definition}
 
 \bigskip
@@ -31,14 +74,6 @@ where $\preceq$ denotes the majorization ordering.
 \leanok
 For $f(t) = t \cdot \log(t)$, if $a \geq c$, $b \geq d$, $a \neq b$, $c \neq d$, then:
 $$\frac{f(c) - f(d)}{c - d} \leq \frac{f(a) - f(b)}{a - b}$$
-\end{lemma}
-
-\begin{lemma}
-\label{lem:telescoping}
-\lean{telescoping_identity}
-\leanok
-For any function $f: \text{Fin}(n) \to \mathbb{R}$ and index $i$:
-$$f(i) = \left(\sum_{j \leq i} f(j)\right) - \left(\sum_{j < i} f(j)\right)$$
 \end{lemma}
 
 \begin{lemma}
@@ -56,12 +91,12 @@ $$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i)$$
 The entropy function $f(x) = \sum_i x_i \log(x_i)$ is Schur-convex.
 \end{theorem}
 
-\begin{lemma}
+\begin{lemma}[Eigenvalue Bound from Inner Product]
 \label{lem:eigenvalue_bound}
 \lean{eigenvalue_bound_eigenbasis}
 \leanok
-If $\|v\| = 1$ and $\text{Re}\langle v, \rho v \rangle > C$ for a Hermitian matrix $\rho$, 
-then there exists an eigenvalue $\lambda_i > C$.
+Let $\rho$ be a Hermitian matrix and $v$ a unit vector with $\|v\| = 1$. 
+If $\langle v, \rho v \rangle > C$, then $\rho$ has an eigenvalue $\lambda_i > C$.
 \end{lemma}
 
 \bigskip
@@ -72,24 +107,24 @@ then there exists an eigenvalue $\lambda_i > C$.
 \leanok
 \uses{def:vonNeumannEntropy, thm:schur_convex_xlogx, lem:eigenvalue_bound}
 Let $\rho$ be an $R \times R$ positive semidefinite density matrix with trace 1.
-If there exists a unit vector $v$ such that $\text{Re}\langle v, \rho v \rangle > 1 - \delta$ where $0 \leq \delta < 1$ and $\delta \leq (R-1)/R$, then:
+If there exists a unit vector $v$ such that $\langle v, \rho v \rangle > 1 - \delta$ where $0 \leq \delta < 1$ and $\delta \leq (R-1)/R$, then:
 $$S(\rho) \leq -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right)$$
 \end{theorem}
 
 \begin{proof}
 \uses{lem:eigenvalue_bound, thm:schur_convex_xlogx}
-The proof proceeds in 10 steps:
+The proof proceeds in 9 steps:
 
 \textbf{Step 1: Eigenvalue Bound from High Fidelity.}
-From the hypothesis $\text{Re}\langle v, \rho v \rangle > 1 - \delta$, we apply 
+From the hypothesis $\langle v, \rho v \rangle > 1 - \delta$, we apply 
 Lemma~\ref{lem:eigenvalue_bound} to conclude that at least one eigenvalue $\lambda_{i_0} > 1 - \delta$.
 
 \textbf{Step 2: Eigenvalue Non-negativity.}
 Since $\rho$ is positive semidefinite, all eigenvalues are non-negative: $\lambda_i \geq 0$ for all $i$.
 
 \textbf{Step 3: Construct Comparison Distribution.}
-Define a comparison eigenvalue distribution:
-$$\text{eig\_comp}(i) = \begin{cases}
+Define a comparison eigenvalue distribution $\lambda_{\text{comp}}$:
+$$\lambda_{\text{comp}}(i) = \begin{cases}
 1 - \delta & \text{if } i = 0 \\
 \frac{\delta}{R-1} & \text{otherwise}
 \end{cases}$$
@@ -97,12 +132,12 @@ This represents a "simple" distribution with one large eigenvalue and $R-1$ equa
 
 \textbf{Step 4: Verify Normalization.}
 We verify that:
-$$\sum_i \text{eig\_comp}(i) = (1-\delta) + (R-1) \cdot \frac{\delta}{R-1} = (1-\delta) + \delta = 1$$
+$$\sum_i \lambda_{\text{comp}}(i) = (1-\delta) + (R-1) \cdot \frac{\delta}{R-1} = (1-\delta) + \delta = 1$$
 
 \textbf{Step 5: Establish Majorization (Key Step).}
-We prove $\text{eig\_comp} \preceq \lambda$ by showing:
+We prove $\lambda_{\text{comp}} \preceq \lambda$ by showing:
 \begin{enumerate}
-\item[(a)] For all $k$: $\sum_{j \leq k} \text{eig\_comp}(\sigma_j) \leq \sum_{j \leq k} \lambda(\tau_j)$ 
+\item[(a)] For all $k$: $\sum_{j \leq k} \lambda_{\text{comp}}(\sigma_j) \leq \sum_{j \leq k} \lambda(\tau_j)$ 
 where $\sigma, \tau$ are sorting permutations
 \item[(b)] Total sums are equal (both equal 1)
 \end{enumerate}
@@ -110,7 +145,7 @@ The proof uses case analysis ($k=0$ vs $k>0$) with a proof by contradiction for 
 
 \textbf{Step 6: Apply Schur-Convexity (Payoff).}
 Using Theorem~\ref{thm:schur_convex_xlogx} and the majorization from Step 5:
-$$\sum_i \lambda_i \log(\lambda_i) \geq \sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i))$$
+$$\sum_i \lambda_i \log(\lambda_i) \geq \sum_i \lambda_{\text{comp}}(i) \log(\lambda_{\text{comp}}(i))$$
 
 \textbf{Step 7: Unfold Entropy Definition.}
 By Definition~\ref{def:vonNeumannEntropy}:
@@ -118,18 +153,22 @@ $$S(\rho) = -\sum_i \lambda_i \log(\lambda_i)$$
 
 \textbf{Step 8: Compute Comparison Entropy.}
 Direct calculation yields:
-$$\sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i)) = (1-\delta)\log(1-\delta) + \delta \log\left(\frac{\delta}{R-1}\right)$$
+$$\sum_i \lambda_{\text{comp}}(i) \log(\lambda_{\text{comp}}(i)) = (1-\delta)\log(1-\delta) + \delta \log\left(\frac{\delta}{R-1}\right)$$
 
-\textbf{Step 9: Handle Complex-Real Conversions.}
-Since eigenvalues are real: $\text{Re}\left(\sum_i \lambda_i \log(\lambda_i)\right) = \sum_i \lambda_i \log(\lambda_i)$
-
-\textbf{Step 10: Final Calculation.}
+\textbf{Step 9: Final Calculation.}
 Combining all steps:
 \begin{align*}
-S(\rho) &= -\text{Re}\left(\sum_i \lambda_i \log(\lambda_i)\right) \\
-&= -\sum_i \lambda_i \log(\lambda_i) \\
-&\leq -\sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i)) \\
+S(\rho) &= -\sum_i \lambda_i \log(\lambda_i) \\
+&\leq -\sum_i \lambda_{\text{comp}}(i) \log(\lambda_{\text{comp}}(i)) \\
 &= -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right)
 \end{align*}
 \end{proof}
+
+\bigskip
+
+\noindent\textbf{Remark:} The original paper assumes $\delta \ll 1$, but for rigorous formalization we require 
+$\delta \leq \frac{R-1}{R}$. This ensures $\frac{\delta}{R-1} \leq 1 - \delta$, which guarantees the comparison 
+distribution $\lambda_{\text{comp}}$ is properly ordered with one dominant eigenvalue. Without this constraint, 
+the majorization argument fails. Since $\frac{R-1}{R} \to 1$ as $R \to \infty$, this constraint is nearly equivalent 
+to $\delta < 1$ for large systems and is always satisfied in practical QKD where $\delta \ll 1$.
 
