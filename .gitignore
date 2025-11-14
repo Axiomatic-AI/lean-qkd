@@ -1,0 +1,35 @@
+# Lean build artifacts
+/.lake/
+/build/
+/leanpkg.path
+*.olean
+
+# Cache
+/.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backup files
+*~
+*.bak
+
+# Blueprint build artifacts
+/blueprint/web/
+/blueprint/*.pdf
+/blueprint/*.aux
+/blueprint/*.log
+/blueprint/*.out
+/blueprint/*.toc
+/blueprint/*.fdb_latexmk
+/blueprint/*.fls
+/blueprint/*.synctex.gz
+

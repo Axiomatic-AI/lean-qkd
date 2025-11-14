@@ -1,35 +1,25 @@
 import Mathlib
 
-
 open Complex Matrix EuclideanSpace InnerProductSpace
 
 variable {𝕂} [NormedField 𝕂] [CompleteSpace 𝕂]
 variable {n} (ρ : Matrix (Fin n) (Fin n) ℂ)
-
--- Use the standard partial order on ℂ: z ≤ w iff z.re ≤ w.re ∧ z.im = w.im
 attribute [local instance] Complex.partialOrder
 
+-- ========================================
+-- SECTION 1: DEFINITIONS
+-- ========================================
 
-noncomputable def Matrix.log
-{n : ℕ}
-[NormedField 𝕂]
-[CompleteSpace 𝕂]
-(A : Matrix (Fin n) (Fin n) 𝕂)
-:
-Matrix (Fin n) (Fin n) 𝕂 := ∑' i : ℕ, ((-1)^(i+1) : 𝕂) • (1 / (i+1 : 𝕂)) • ((1 - A) ^ (i+1))
-
-
--- The von Neumann entropy of a density matrix using the standard formula S = -tr(ρ ln ρ)
+-- The von Neumann entropy S(ρ) = -∑_i λ_i log(λ_i) where λ_i are the eigenvalues
 noncomputable def vonNeumannEntropy
 {n : ℕ}
-[NormedField 𝕂]
-[CompleteSpace 𝕂]
-(ρ : Matrix (Fin n) (Fin n) 𝕂)
+(A : Matrix (Fin n) (Fin n) ℂ)
+(hA : A.IsHermitian)
 :
-𝕂 := -1 * Matrix.trace (ρ * Matrix.log ρ)
+ℂ := -1 * ∑ i, hA.eigenvalues i * Real.log (hA.eigenvalues i)
 
 
--- A function f: ℝⁿ → ℝ is Schur-convex if x ≺ y implies f(x) ≤ f(y) where ≺ denotes the majorization ordering
+-- A function f: ℝⁿ → ℝ is Schur-convex if x ≺ y ⟹ f(x) ≤ f(y) where ≺ is the majorization ordering
 def SchurConvex {n : ℕ} (f : (Fin n → ℝ) → ℝ) : Prop :=
   ∀ (x y : Fin n → ℝ),
     (∀ i, 0 ≤ x i) →
@@ -41,219 +31,78 @@ def SchurConvex {n : ℕ} (f : (Fin n → ℝ) → ℝ) : Prop :=
     (∀ k : Fin n, ∑ i ∈ (Finset.univ.filter (· ≤ k)), x (σ i) ≤ ∑ i ∈ (Finset.univ.filter (· ≤ k)), y (τ i)) ∧ (∑ i, x i = ∑ i, y i)) →
     f x ≤ f y
 
+-- ========================================
+-- SECTION 2: AUXILIARY LEMMAS
+-- ========================================
 
+-- ----------------------------------------
+-- 2.1: Convexity and Slope Comparison
+-- ----------------------------------------
 
+-- For f(t) = t·log(t), if a ≥ c, b ≥ d, a ≠ b, c ≠ d, then [f(c)-f(d)]/(c-d) ≤ [f(a)-f(b)]/(a-b)
+lemma slope_comparison_tlogt (a b c d : ℝ) (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) (hd : 0 ≤ d)
+    (hac : a ≥ c) (hbd : b ≥ d) (hab : a ≠ b) (hcd : c ≠ d) :
+    (c * Real.log c - d * Real.log d) / (c - d) ≤
+    (a * Real.log a - b * Real.log b) / (a - b) := by
+  have f := Real.convexOn_mul_log
+  rcases hab.lt_or_gt with hab_lt | hab_gt <;> rcases hcd.lt_or_gt with hcd_lt | hcd_gt
 
-theorem vonNeumannEntropy_hermitian
-{n : ℕ}
-(A : Matrix (Fin n) (Fin n) ℂ)
-(hA : A.IsHermitian)
-:
-vonNeumannEntropy A = -1 * ∑ i, hA.eigenvalues i * Real.log (hA.eigenvalues i) := by
-  sorry
-
-
-
-
--- Slope comparison lemma with strict inequalities (original hypothesis)
-lemma slope_comparison_tlogt_strict_1
-(a b c d : ℝ)
-(ha : 0 ≤ a)
-(hb : 0 ≤ b)
-(hc : 0 ≤ c)
-(hd : 0 ≤ d)
-(hac : a ≥ c)
-(hbd : b ≥ d)
-(hab : a > b)
-(hcd : c > d)
-:
-(c * Real.log c - d * Real.log d) / (c - d) ≤ (a * Real.log a - b * Real.log b) / (a - b) := by
-  have f_convex : ConvexOn ℝ (Set.Ici 0) (fun t => t * Real.log t) := Real.convexOn_mul_log
-  have hmem_a : a ∈ Set.Ici (0:ℝ) := ha
-  have hmem_b : b ∈ Set.Ici (0:ℝ) := hb
-  have hmem_c : c ∈ Set.Ici (0:ℝ) := hc
-  have hmem_d : d ∈ Set.Ici (0:ℝ) := hd
-  have hab_pos : 0 < a - b := sub_pos.mpr hab
-  have hcd_pos : 0 < c - d := sub_pos.mpr hcd
-  have had_pos : 0 < a - d := sub_pos.mpr (lt_of_lt_of_le hcd hac)
-  have step1 :
-    (c * Real.log c - d * Real.log d) / (c - d)
-    ≤ (a * Real.log a - d * Real.log d) / (a - d) := by
-    have hca_le : c ≤ a := hac
-    have h_ne_cd : c ≠ d := ne_of_gt hcd
-    have h_ne_ad : a ≠ d := ne_of_gt (lt_of_lt_of_le hcd hac)
-    exact f_convex.secant_mono hmem_d hmem_c hmem_a h_ne_cd h_ne_ad hca_le
-  have step2 :
-    (a * Real.log a - d * Real.log d) / (a - d)
-    ≤ (a * Real.log a - b * Real.log b) / (a - b) := by
-    have hdb_le : d ≤ b := hbd
-    have h_ne_da : d ≠ a := ne_of_lt (lt_of_lt_of_le hcd hac)
-    have h_ne_ba : b ≠ a := ne_of_lt hab
-    have secant_result := f_convex.secant_mono hmem_a hmem_d hmem_b h_ne_da h_ne_ba hdb_le
-    have h_left : (d * Real.log d - a * Real.log a) / (d - a) =
-                  (a * Real.log a - d * Real.log d) / (a - d) := by
+  · -- Case 1: a < b, c < d
+    have h1 : (c * Real.log c - d * Real.log d) / (c - d) = (d * Real.log d - c * Real.log c) / (d - c) := by
       rw [← neg_div_neg_eq, neg_sub, neg_sub]
-    have h_right : (b * Real.log b - a * Real.log a) / (b - a) =
-                   (a * Real.log a - b * Real.log b) / (a - b) := by
+    have h2 : (a * Real.log a - b * Real.log b) / (a - b) = (b * Real.log b - a * Real.log a) / (b - a) := by
       rw [← neg_div_neg_eq, neg_sub, neg_sub]
-    rw [h_left, h_right] at secant_result
-    exact secant_result
-  exact le_trans step1 step2
+    rw [h1, h2]; by_cases h : d ≤ a
+    · by_cases heq : d = a; · subst heq; exact f.slope_mono_adjacent hc hb hcd_lt hab_lt
+      exact le_trans (f.slope_mono_adjacent hc ha hcd_lt (lt_of_le_of_ne h heq))
+                     (f.slope_mono_adjacent hd hb (lt_of_le_of_ne h heq) hab_lt)
+    · push_neg at h; by_cases heq : d = b
+      · subst heq; by_cases hca : c = a; · subst hca; simp
+        exact f.secant_mono_aux3 hc hb (lt_of_le_of_ne hac hca) hab_lt
+      · have : (d * Real.log d - c * Real.log c) / (d - c) ≤ (d * Real.log d - a * Real.log a) / (d - a) := by
+          by_cases hca : c = a; · subst hca; simp
+          exact f.secant_mono_aux3 hc hd (lt_of_le_of_ne hac hca) h
+        exact le_trans this (f.secant_mono_aux2 ha hb h (lt_of_le_of_ne hbd heq))
+
+  · -- Case 2: a < b, c > d
+    have h : (a * Real.log a - b * Real.log b) / (a - b) = (b * Real.log b - a * Real.log a) / (b - a) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    rw [h]; by_cases hle : c ≤ a
+    · by_cases heq : c = a; · subst heq; exact f.slope_mono_adjacent hd hb hcd_gt hab_lt
+      exact le_trans (f.slope_mono_adjacent hd ha hcd_gt (lt_of_le_of_ne hle heq))
+                     (f.slope_mono_adjacent hc hb (lt_of_le_of_ne hle heq) hab_lt)
+    · push_neg at hle; linarith
+
+  · -- Case 3: a > b, c < d
+    have h1 : (c * Real.log c - d * Real.log d) / (c - d) = (d * Real.log d - c * Real.log c) / (d - c) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    have h2 : (a * Real.log a - b * Real.log b) / (a - b) = (b * Real.log b - a * Real.log a) / (b - a) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    have h3 : (b * Real.log b - a * Real.log a) / (b - a) = (a * Real.log a - b * Real.log b) / (a - b) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    rw [h1, h2, h3]
+    by_cases h : d ≤ b
+    · by_cases heq : d = b; · subst heq; exact f.slope_mono_adjacent hc ha hcd_lt hab_gt
+      have hdb : d < b := lt_of_le_of_ne h heq
+      exact le_trans (f.slope_mono_adjacent hc hb hcd_lt hdb)
+                     (f.slope_mono_adjacent hd ha hdb hab_gt)
+    · push_neg at h; linarith
+
+  · -- Case 4: a > b, c > d
+    have step1 := f.secant_mono hd hc ha (ne_of_gt hcd_gt) (ne_of_gt (lt_of_lt_of_le hcd_gt hac)) hac
+    have step2 := f.secant_mono ha hd hb (ne_of_lt (lt_of_lt_of_le hcd_gt hac)) (ne_of_lt hab_gt) hbd
+    have h1 : (d * Real.log d - a * Real.log a) / (d - a) = (a * Real.log a - d * Real.log d) / (a - d) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    have h2 : (b * Real.log b - a * Real.log a) / (b - a) = (a * Real.log a - b * Real.log b) / (a - b) := by
+      rw [← neg_div_neg_eq, neg_sub, neg_sub]
+    rw [h1, h2] at step2; exact le_trans step1 step2
 
 
+-- ----------------------------------------
+-- 2.2: Telescoping and Majorization
+-- ----------------------------------------
 
-lemma slope_comparison_tlogt_strict_2
-(a b c d : ℝ)
-(ha : 0 ≤ a)
-(hb : 0 ≤ b)
-(hc : 0 ≤ c)
-(hd : 0 ≤ d)
-(hac : a ≥ c)
-(hbd : b ≥ d)
-(hab : a < b)
-(hcd : c < d)
-:
-(c * Real.log c - d * Real.log d) / (c - d) ≤ (a * Real.log a - b * Real.log b) / (a - b) := by
-  have f_convex : ConvexOn ℝ (Set.Ici 0) (fun t => t * Real.log t) := Real.convexOn_mul_log
-  have hmem_a : a ∈ Set.Ici (0:ℝ) := ha
-  have hmem_b : b ∈ Set.Ici (0:ℝ) := hb
-  have hmem_c : c ∈ Set.Ici (0:ℝ) := hc
-  have hmem_d : d ∈ Set.Ici (0:ℝ) := hd
-  have slope_equiv_c_d : (c * Real.log c - d * Real.log d) / (c - d) =
-    (d * Real.log d - c * Real.log c) / (d - c) := by rw [← neg_div_neg_eq, neg_sub, neg_sub]
-  have slope_equiv_a_b : (a * Real.log a - b * Real.log b) / (a - b) =
-    (b * Real.log b - a * Real.log a) / (b - a) := by rw [← neg_div_neg_eq, neg_sub, neg_sub]
-  rw [slope_equiv_c_d, slope_equiv_a_b]
-  by_cases h_order : d ≤ a
-
-  case pos =>
-    by_cases h_eq : d = a
-    case pos =>
-      subst h_eq
-      exact f_convex.slope_mono_adjacent hmem_c hmem_b hcd hab
-    case neg =>
-      have hda : d < a := lt_of_le_of_ne h_order h_eq
-      have step1 := f_convex.slope_mono_adjacent hmem_c hmem_a hcd hda
-      have step2 := f_convex.slope_mono_adjacent hmem_d hmem_b hda hab
-      exact le_trans step1 step2
-
-  case neg =>
-    push_neg at h_order
-    have had : a < d := h_order
-
-    by_cases h_eq : d = b
-    case pos =>
-      subst h_eq
-      by_cases h_ca : c = a
-      case pos => subst h_ca; simp
-      case neg =>
-        have hca : c < a := lt_of_le_of_ne hac h_ca
-        exact f_convex.secant_mono_aux3 hmem_c hmem_b hca hab
-    case neg =>
-      have hdb : d < b := lt_of_le_of_ne hbd h_eq
-      have step1 : (d * Real.log d - c * Real.log c) / (d - c) ≤
-                   (d * Real.log d - a * Real.log a) / (d - a) := by
-        by_cases h_ca : c = a
-        case pos => subst h_ca; simp
-        case neg =>
-          have hca : c < a := lt_of_le_of_ne hac h_ca
-          exact f_convex.secant_mono_aux3 hmem_c hmem_d hca had
-      have step2 := f_convex.secant_mono_aux2 hmem_a hmem_b had hdb
-      exact le_trans step1 step2
-
-
-
-
-lemma slope_comparison_tlogt_strict_3
-(a b c d : ℝ)
-(ha : 0 ≤ a)
-(hb : 0 ≤ b)
-(hc : 0 ≤ c)
-(hd : 0 ≤ d)
-(hac : a ≥ c)
-(hab : a < b)
-(hcd : c > d)
-:
-(c * Real.log c - d * Real.log d) / (c - d) ≤ (a * Real.log a - b * Real.log b) / (a - b) := by
-  have f_convex : ConvexOn ℝ (Set.Ici 0) (fun t => t * Real.log t) := Real.convexOn_mul_log
-  have hmem_a : a ∈ Set.Ici (0:ℝ) := ha
-  have hmem_b : b ∈ Set.Ici (0:ℝ) := hb
-  have hmem_c : c ∈ Set.Ici (0:ℝ) := hc
-  have hmem_d : d ∈ Set.Ici (0:ℝ) := hd
-  have slope_equiv_a_b : (a * Real.log a - b * Real.log b) / (a - b) =
-    (b * Real.log b - a * Real.log a) / (b - a) := by rw [← neg_div_neg_eq, neg_sub, neg_sub]
-  rw [slope_equiv_a_b]
-  by_cases h_order : c ≤ a
-  case pos =>
-    by_cases h_eq : c = a
-    case pos =>
-      subst h_eq
-      have hdc : d < c := hcd
-      exact f_convex.slope_mono_adjacent hmem_d hmem_b hdc hab
-    case neg =>
-      have hca : c < a := lt_of_le_of_ne h_order h_eq
-      have hdc : d < c := hcd
-      have step1 := f_convex.slope_mono_adjacent hmem_d hmem_a hdc hca
-      have step2 := f_convex.slope_mono_adjacent hmem_c hmem_b hca hab
-      exact le_trans step1 step2
-  case neg =>
-    push_neg at h_order
-    have hac_lt : a < c := h_order
-    have : a ≥ c := hac
-    linarith
-
-
-
-lemma slope_comparison_tlogt_strict_4
-(a b c d : ℝ)
-(ha : 0 ≤ a)
-(hb : 0 ≤ b)
-(hc : 0 ≤ c)
-(hd : 0 ≤ d)
-(_hac : a ≥ c)
-(hbd : b ≥ d)
-(hab : a > b)
-(hcd : c < d)
-:
-(c * Real.log c - d * Real.log d) / (c - d) ≤ (a * Real.log a - b * Real.log b) / (a - b) := by
-  have f_convex : ConvexOn ℝ (Set.Ici 0) (fun t => t * Real.log t) := Real.convexOn_mul_log
-  have hmem_a : a ∈ Set.Ici (0:ℝ) := ha
-  have hmem_b : b ∈ Set.Ici (0:ℝ) := hb
-  have hmem_c : c ∈ Set.Ici (0:ℝ) := hc
-  have hmem_d : d ∈ Set.Ici (0:ℝ) := hd
-  have slope_equiv_c_d : (c * Real.log c - d * Real.log d) / (c - d) =
-    (d * Real.log d - c * Real.log c) / (d - c) := by rw [← neg_div_neg_eq, neg_sub, neg_sub]
-  rw [slope_equiv_c_d]
-  have hba : b < a := hab
-  have hdc : d > c := hcd
-  have h_result := slope_comparison_tlogt_strict_3 b a d c hb ha hd hc hbd hba hdc
-  have h_equiv : (a * Real.log a - b * Real.log b) / (a - b) =
-                 (b * Real.log b - a * Real.log a) / (b - a) := by
-    rw [← neg_div_neg_eq, neg_sub, neg_sub]
-  rw [h_equiv]
-  exact h_result
-
-
-lemma slope_comparison_tlogt (a b c d : ℝ)
-  (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) (hd : 0 ≤ d)
-  (hac : a ≥ c) (hbd : b ≥ d) (hab : a ≠ b) (hcd : c ≠ d) :
-  (c * Real.log c - d * Real.log d) / (c - d) ≤
-  (a * Real.log a - b * Real.log b) / (a - b) := by
-  cases' lt_or_gt_of_ne hab with hab_lt hab_gt
-  case inl =>
-    cases' lt_or_gt_of_ne hcd with hcd_lt hcd_gt
-    case inl =>
-      exact slope_comparison_tlogt_strict_2 a b c d ha hb hc hd hac hbd hab_lt hcd_lt
-    case inr =>
-      exact slope_comparison_tlogt_strict_3 a b c d ha hb hc hd hac hab_lt hcd_gt
-  case inr =>
-    cases' lt_or_gt_of_ne hcd with hcd_lt hcd_gt
-    case inl =>
-      exact slope_comparison_tlogt_strict_4 a b c d ha hb hc hd hac hbd hab_gt hcd_lt
-    case inr =>
-      exact slope_comparison_tlogt_strict_1 a b c d ha hb hc hd hac hbd hab_gt hcd_gt
-
-
+-- Telescoping identity: f(i) = sum(j <= i) f(j) - sum(j < i) f(j)
 lemma telescoping_identity (f : Fin n → ℝ) (i : Fin n) :
   f i = (∑ j ∈ Finset.univ with j ≤ i, f j) - (∑ j ∈ Finset.univ with j < i, f j) := by
   rw [Finset.sum_filter, Finset.sum_filter, ← Finset.sum_sub_distrib]
@@ -270,7 +119,7 @@ lemma telescoping_identity (f : Fin n → ℝ) (i : Fin n) :
   · simp
 
 
-
+-- For decreasing vectors x, y with xᵢ ≠ yᵢ, if x ≺ y then ∑ᵢ xᵢ log(xᵢ) ≤ ∑ᵢ yᵢ log(yᵢ)
 lemma schur_convex_reduction_to_distinct {m : ℕ} (hm : 0 < m) (x y : Fin m → ℝ) :
   (∀ i : Fin m, 0 ≤ x i) →
   (∀ i : Fin m, 0 ≤ y i) →
@@ -526,8 +375,11 @@ lemma schur_convex_reduction_to_distinct {m : ℕ} (hm : 0 < m) (x y : Fin m →
   exact telescoping_rewrite
 
 
+-- ----------------------------------------
+-- 2.3: Schur Convexity
+-- ----------------------------------------
 
-
+-- The entropy function f(x) = ∑ᵢ xᵢ log(xᵢ) is Schur-convex: x ≺ y ⟹ ∑ᵢ xᵢ log(xᵢ) ≤ ∑ᵢ yᵢ log(yᵢ)
 theorem schur_convex_xlogx {n : ℕ} :
   SchurConvex (fun x : Fin n → ℝ => ∑ i, x i * Real.log (x i)) := by
   unfold SchurConvex
@@ -807,9 +659,11 @@ theorem schur_convex_xlogx {n : ℕ} :
       exact main_ineq
 
 
+-- ----------------------------------------
+-- 2.4: Eigenvalue Properties
+-- ----------------------------------------
 
-
-
+-- If ‖v‖ = 1 and Re⟨v, ρv⟩ > C for a Hermitian matrix ρ, then ∃i: λᵢ > C
 lemma eigenvalue_bound_eigenbasis
 {R : ℕ}
 (C : ℝ)
@@ -902,28 +756,11 @@ lemma eigenvalue_bound_eigenbasis
   linarith [hv_bound, bound_contradiction]
 
 
+-- ========================================
+-- SECTION 3: MAIN THEOREM
+-- ========================================
 
-/-- **High Fidelity Implies Low Entropy**
-
-For a positive semidefinite density matrix ρ of order R > 1 with trace 1,
-if there exists a unit vector achieving fidelity greater than 1 - δ,
-then the von Neumann entropy is bounded above by the entropy of a specific
-comparison distribution.
-
-## Statement
-
-Let ρ be an R×R positive semidefinite matrix (density matrix) with trace 1.
-If there exists a unit vector v such that Re⟨v, ρv⟩ > 1 - δ, then:
-
-  S(ρ) ≤ -(1-δ)log(1-δ) - δ log(δ/(R-1))
-
-where S(ρ) = -tr(ρ log ρ) is the von Neumann entropy.
-
-## Physical Interpretation
-
-This result shows that high fidelity (low δ) with a pure state implies
-low entropy, quantifying the "purity" of the quantum state.
--/
+-- If Re⟨v, ρv⟩ > 1 - δ for ‖v‖ = 1, then S(ρ) ≤ -(1-δ)log(1-δ) - δ log(δ/(R-1))
 theorem high_fidelity_implies_low_entropy_equivalent
     (R : ℕ)
     (δ : ℝ)
@@ -936,7 +773,8 @@ theorem high_fidelity_implies_low_entropy_equivalent
     (trace_one : ∑ i, hρ_pos.isHermitian.eigenvalues i = 1)
     (hv : ∃ v : EuclideanSpace ℂ (Fin R), norm v = 1 ∧ (⟪v, ρ *ᵥ v⟫_ℂ).re > 1 - δ)
     :
-    (vonNeumannEntropy ρ).re ≤ -(1 - δ) * Real.log (1 - δ) - δ * Real.log (δ / (R - 1)) := by
+    (vonNeumannEntropy ρ hρ_pos.isHermitian).re ≤
+      -(1 - δ) * Real.log (1 - δ) - δ * Real.log (δ / (R - 1)) := by
   -- Extract Hermitian property from positive semidefiniteness
   have hρ : ρ.IsHermitian := hρ_pos.isHermitian
 
@@ -1308,8 +1146,8 @@ theorem high_fidelity_implies_low_entropy_equivalent
     simp only at this
     exact this
 
-  -- Step 7: Rewrite von Neumann entropy in terms of eigenvalues
-  rw [vonNeumannEntropy_hermitian ρ hρ]
+  -- Step 7: Unfold von Neumann entropy definition
+  unfold vonNeumannEntropy
   simp only [neg_mul]
 
   -- Step 8: Compute entropy of comparison distribution explicitly
