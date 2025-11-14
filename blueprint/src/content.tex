@@ -86,25 +86,30 @@ $$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i)$$
 \end{lemma}
 
 \begin{proof}
-Let $f(t) = t \log(t)$. Define the slopes:
+For $f(t) = t \log(t)$, define the secant slopes:
 $$c_i := \frac{f(x_i) - f(y_i)}{x_i - y_i} = \frac{x_i \log(x_i) - y_i \log(y_i)}{x_i - y_i}$$
 
-By Lemma~\ref{lem:slope_comparison} (convexity of $f$), the secant slopes are monotonically non-decreasing:
+By Lemma~\ref{lem:slope_comparison} (convexity of $f$), these slopes are monotonically non-decreasing:
 $$c_{i+1} \leq c_i \quad \text{for all } i \in \{1, \ldots, n-1\}$$
 
-Define cumulative sums $A_0 = B_0 = 0$ and:
-$$A_i = \sum_{j=1}^i x_j, \quad B_i = \sum_{j=1}^i y_j$$
-
-By the majorization property, $A_i \geq B_i$ for all $i \in \{1, \ldots, n-1\}$ and $A_n = B_n$. Hence:
+Using the telescoping identity $x_i = \left(\sum_{j \leq i} x_j\right) - \left(\sum_{j < i} x_j\right)$, we rewrite:
 \begin{align*}
-\sum_{i=1}^n (f(x_i) - f(y_i)) &= \sum_{i=1}^n c_i (x_i - y_i) \\
-&= \sum_{i=1}^n c_i (A_i - A_{i-1} - (B_i - B_{i-1})) \\
-&= \sum_{i=1}^n c_i (A_i - B_i) - \sum_{i=1}^n c_i (A_{i-1} - B_{i-1}) \\
-&= c_n(A_n - B_n) + \sum_{i=1}^{n-1} (c_i - c_{i+1})(A_i - B_i) - c_1(A_0 - B_0) \\
-&= 0 + \sum_{i=1}^{n-1} (c_i - c_{i+1})(A_i - B_i) - 0 \\
+\sum_{i=1}^n (f(x_i) - f(y_i)) 
+&= \sum_{i=1}^n c_i (x_i - y_i) \\
+&= \sum_{i=1}^n c_i \left[\left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) - \left(\sum_{j < i} x_j - \sum_{j < i} y_j\right)\right]
+\end{align*}
+
+By majorization, $\sum_{j \leq k} x_j \geq \sum_{j \leq k} y_j$ for all $k < n$, and equality holds at $k = n$ by normalization.
+
+Expanding the telescoping sum and using the boundary condition (the term at $i = n$ vanishes):
+\begin{align*}
+\sum_{i=1}^n c_i (x_i - y_i) 
+&= \sum_{i=1}^{n-1} (c_i - c_{i+1}) \left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) \\
 &\geq 0
 \end{align*}
-The final inequality holds because $c_i - c_{i+1} \geq 0$ (slopes decrease) and $A_i - B_i \geq 0$ (majorization).
+
+The final inequality holds because $(c_i - c_{i+1}) \geq 0$ (slopes non-increasing) and 
+$\left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) \geq 0$ (majorization).
 \end{proof}
 
 \begin{theorem}
