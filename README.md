@@ -1,10 +1,6 @@
 # Quantum Key Distribution: High Fidelity Implies Low Entropy
 
-**Authors:** Ben Breen & Kfir Sulimany
-
 Lean 4 formalization of Lemma 1 from [*Unconditional Security Of Quantum Key Distribution Over Arbitrarily Long Distances*](https://arxiv.org/abs/quant-ph/9802025) by Lo and Chau (1998).
-
-**Blueprint:** [BenKBreen.github.io/QKD](https://BenKBreen.github.io/QKD)
 
 ## Main Theorem
 
@@ -26,9 +22,9 @@ lake build
 
 **Prerequisites:**
 - Python ≥ 3.7
-- Graphviz:
-  - macOS: `brew install graphviz`
-  - Linux: `sudo apt-get install graphviz graphviz-dev`
+- Graphviz: Download and install from [graphviz.org/download](https://graphviz.org/download/)
+  - macOS users with Homebrew can use: `brew install graphviz`
+  - Linux users can use: `sudo apt-get install graphviz graphviz-dev`
 
 **Setup:**
 
