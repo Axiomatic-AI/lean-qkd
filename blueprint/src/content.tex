@@ -1,7 +1,135 @@
-% In this file you should put the actual content of the blueprint.
-% It will be used both by the web and the print version.
-% It should *not* include the \begin{document}
-%
-% If you want to split the blueprint content into several files then
-% the current file can be a simple sequence of \input. Otherwise It
-% can start with a \section or \chapter for instance.
+% Main content for QKD blueprint
+
+This blueprint documents the formalization of Peter Shor's quantum key distribution security result:
+high fidelity with a pure state implies bounded von Neumann entropy.
+
+\bigskip
+
+\begin{definition}
+\label{def:vonNeumannEntropy}
+\lean{vonNeumannEntropy}
+\leanok
+For a Hermitian matrix $A$, the \emph{von Neumann entropy} is defined as:
+$$S(A) = -\sum_i \lambda_i \log(\lambda_i)$$
+where $\lambda_i$ are the eigenvalues of $A$.
+\end{definition}
+
+\begin{definition}
+\label{def:SchurConvex}
+\lean{SchurConvex}
+\leanok
+A function $f: \mathbb{R}^n \to \mathbb{R}$ is \emph{Schur-convex} if:
+$$x \preceq y \implies f(x) \leq f(y)$$
+where $\preceq$ denotes the majorization ordering.
+\end{definition}
+
+\bigskip
+
+\begin{lemma}
+\label{lem:slope_comparison}
+\lean{slope_comparison_tlogt}
+\leanok
+For $f(t) = t \cdot \log(t)$, if $a \geq c$, $b \geq d$, $a \neq b$, $c \neq d$, then:
+$$\frac{f(c) - f(d)}{c - d} \leq \frac{f(a) - f(b)}{a - b}$$
+\end{lemma}
+
+\begin{lemma}
+\label{lem:telescoping}
+\lean{telescoping_identity}
+\leanok
+For any function $f: \text{Fin}(n) \to \mathbb{R}$ and index $i$:
+$$f(i) = \left(\sum_{j \leq i} f(j)\right) - \left(\sum_{j < i} f(j)\right)$$
+\end{lemma}
+
+\begin{lemma}
+\label{lem:schur_reduction}
+\lean{schur_convex_reduction_to_distinct}
+\leanok
+For decreasing vectors $x, y$ with $x_i \neq y_i$ for all $i$, if $x \preceq y$ then:
+$$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i)$$
+\end{lemma}
+
+\begin{theorem}
+\label{thm:schur_convex_xlogx}
+\lean{schur_convex_xlogx}
+\leanok
+The entropy function $f(x) = \sum_i x_i \log(x_i)$ is Schur-convex.
+\end{theorem}
+
+\begin{lemma}
+\label{lem:eigenvalue_bound}
+\lean{eigenvalue_bound_eigenbasis}
+\leanok
+If $\|v\| = 1$ and $\text{Re}\langle v, \rho v \rangle > C$ for a Hermitian matrix $\rho$, 
+then there exists an eigenvalue $\lambda_i > C$.
+\end{lemma}
+
+\bigskip
+
+\begin{theorem}
+\label{thm:main}
+\lean{high_fidelity_implies_low_entropy_equivalent}
+\leanok
+\uses{def:vonNeumannEntropy, thm:schur_convex_xlogx, lem:eigenvalue_bound}
+Let $\rho$ be an $R \times R$ positive semidefinite density matrix with trace 1.
+If there exists a unit vector $v$ such that $\text{Re}\langle v, \rho v \rangle > 1 - \delta$ where $0 \leq \delta < 1$ and $\delta \leq (R-1)/R$, then:
+$$S(\rho) \leq -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right)$$
+\end{theorem}
+
+\begin{proof}
+\uses{lem:eigenvalue_bound, thm:schur_convex_xlogx}
+The proof proceeds in 10 steps:
+
+\textbf{Step 1: Eigenvalue Bound from High Fidelity.}
+From the hypothesis $\text{Re}\langle v, \rho v \rangle > 1 - \delta$, we apply 
+Lemma~\ref{lem:eigenvalue_bound} to conclude that at least one eigenvalue $\lambda_{i_0} > 1 - \delta$.
+
+\textbf{Step 2: Eigenvalue Non-negativity.}
+Since $\rho$ is positive semidefinite, all eigenvalues are non-negative: $\lambda_i \geq 0$ for all $i$.
+
+\textbf{Step 3: Construct Comparison Distribution.}
+Define a comparison eigenvalue distribution:
+$$\text{eig\_comp}(i) = \begin{cases}
+1 - \delta & \text{if } i = 0 \\
+\frac{\delta}{R-1} & \text{otherwise}
+\end{cases}$$
+This represents a "simple" distribution with one large eigenvalue and $R-1$ equal small eigenvalues.
+
+\textbf{Step 4: Verify Normalization.}
+We verify that:
+$$\sum_i \text{eig\_comp}(i) = (1-\delta) + (R-1) \cdot \frac{\delta}{R-1} = (1-\delta) + \delta = 1$$
+
+\textbf{Step 5: Establish Majorization (Key Step).}
+We prove $\text{eig\_comp} \preceq \lambda$ by showing:
+\begin{enumerate}
+\item[(a)] For all $k$: $\sum_{j \leq k} \text{eig\_comp}(\sigma_j) \leq \sum_{j \leq k} \lambda(\tau_j)$ 
+where $\sigma, \tau$ are sorting permutations
+\item[(b)] Total sums are equal (both equal 1)
+\end{enumerate}
+The proof uses case analysis ($k=0$ vs $k>0$) with a proof by contradiction for the $k>0$ case.
+
+\textbf{Step 6: Apply Schur-Convexity (Payoff).}
+Using Theorem~\ref{thm:schur_convex_xlogx} and the majorization from Step 5:
+$$\sum_i \lambda_i \log(\lambda_i) \geq \sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i))$$
+
+\textbf{Step 7: Unfold Entropy Definition.}
+By Definition~\ref{def:vonNeumannEntropy}:
+$$S(\rho) = -\sum_i \lambda_i \log(\lambda_i)$$
+
+\textbf{Step 8: Compute Comparison Entropy.}
+Direct calculation yields:
+$$\sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i)) = (1-\delta)\log(1-\delta) + \delta \log\left(\frac{\delta}{R-1}\right)$$
+
+\textbf{Step 9: Handle Complex-Real Conversions.}
+Since eigenvalues are real: $\text{Re}\left(\sum_i \lambda_i \log(\lambda_i)\right) = \sum_i \lambda_i \log(\lambda_i)$
+
+\textbf{Step 10: Final Calculation.}
+Combining all steps:
+\begin{align*}
+S(\rho) &= -\text{Re}\left(\sum_i \lambda_i \log(\lambda_i)\right) \\
+&= -\sum_i \lambda_i \log(\lambda_i) \\
+&\leq -\sum_i \text{eig\_comp}(i) \log(\text{eig\_comp}(i)) \\
+&= -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right)
+\end{align*}
+\end{proof}
+
