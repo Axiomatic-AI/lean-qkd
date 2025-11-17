@@ -20,35 +20,25 @@ lake build
 
 ## Blueprint Documentation
 
-**Prerequisites:**
-- Python ≥ 3.7
-- Graphviz: Download and install from [graphviz.org/download](https://graphviz.org/download/)
-  - macOS users with Homebrew can use: `brew install graphviz`
-  - Linux users can use: `sudo apt-get install graphviz graphviz-dev`
+Install and set up leanblueprint. **Note:** leanblueprint requires graphviz to be installed first. See the [leanblueprint documentation](https://github.com/PatrickMassot/leanblueprint) for system requirements before proceeding.
 
-**Setup:**
+```bash
+pip install leanblueprint
+```
 
-1. Install leanblueprint:
-   ```bash
-   pip install leanblueprint
-   ```
+### Useful Commands
 
-2. If installation fails with `pygraphviz` errors on macOS:
-   ```bash
-   pip install --config-settings="--global-option=build_ext" \
-     --config-settings="--global-option=-I$(brew --prefix graphviz)/include" \
-     --config-settings="--global-option=-L$(brew --prefix graphviz)/lib" \
-     pygraphviz
-   pip install leanblueprint
-   ```
+Build and serve the blueprint locally:
+```bash
+leanblueprint web
+leanblueprint serve
+```
+Then visit `http://0.0.0.0:8000/` in your browser.
 
-3. Generate the blueprint:
-   ```bash
-   cd blueprint
-   leanblueprint web
-   ```
-
-The blueprint will be at `blueprint/web/index.html`.
+Build the PDF version:
+```bash
+leanblueprint pdf
+```
 
 ## License
 

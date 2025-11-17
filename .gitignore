@@ -1,35 +1,19 @@
-# Lean build artifacts
-/.lake/
-/build/
-/leanpkg.path
+.lake
 *.olean
-
-# Cache
-/.cache/
-
-# IDE
-.vscode/
-.idea/
+*.paux
+*.aux
+*.fls
+*.fdb_latexmk
+*.log
 *.swp
-*.swo
-*~
-
-# OS
+*.out
+*.synctex.gz
 .DS_Store
-Thumbs.db
 
-# Backup files
-*~
-*.bak
+# leanblueprint generated artifacts
+lean_decls
+blueprint/web
+blueprint/print
 
-# Blueprint build artifacts
-/blueprint/web/
-/blueprint/*.pdf
-/blueprint/*.aux
-/blueprint/*.log
-/blueprint/*.out
-/blueprint/*.toc
-/blueprint/*.fdb_latexmk
-/blueprint/*.fls
-/blueprint/*.synctex.gz
-
+# Keep source files
+!blueprint/src/
