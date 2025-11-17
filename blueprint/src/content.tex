@@ -1,15 +1,16 @@
 % Main content for QKD blueprint
 
-This blueprint documents the formalization of \textbf{Lemma 1} from the seminal paper 
+This blueprint formalizes \textbf{Lemma 1} from the paper 
 \href{https://arxiv.org/abs/quant-ph/9802025}{\emph{Unconditional Security Of Quantum Key Distribution Over Arbitrarily Long Distances}} 
 by Lo and Chau (1998).
 
-The lemma establishes a fundamental result in quantum key distribution security: 
-high fidelity with a pure state implies bounded von Neumann entropy. 
-This formalization is expected to attract significant interest from the quantum cryptography community, 
-as it provides a machine-checked proof of a cornerstone result in the security analysis of quantum key distribution protocols.
+Lemma 1 establishes a quantitative relation between \emph{fidelity} and \emph{von Neumann entropy}: 
+high fidelity with a reference pure state implies an upper bound on the entropy of the underlying density operator. 
+The purpose of this blueprint is to give a precise, machine-checked version of this argument.
 
 \bigskip
+
+\noindent For reference, we reproduce below the statement and proof of Lemma~1 as it appears in Lo--Chau (1998).
 
 \begin{center}
 \fbox{\begin{minipage}{0.95\textwidth}
@@ -38,13 +39,24 @@ between the remaining $2^{2R}-1$ possibilities. \hfill Q.E.D.
 
 \bigskip
 
-\begin{definition}
+\subsection*{Preliminaries}
+
+\noindent We begin with several basic definitions used to verify the proof of Lemma~1.
+
+\begin{definition}[von Neumann Entropy]
 \label{def:vonNeumannEntropy}
 \lean{vonNeumannEntropy}
 \leanok
-For a Hermitian matrix $A$, the \emph{von Neumann entropy} is defined as:
-$$S(A) = -\sum_i \lambda_i \log(\lambda_i)$$
-where $\lambda_i$ are the eigenvalues of $A$.
+For a Hermitian matrix $A$ with eigenvalues $\lambda_i$ (for instance, a density matrix with $\lambda_i \geq 0$ and $\sum_i \lambda_i = 1$), 
+the \emph{von Neumann entropy} is defined as:
+$$S(A) = -\sum_i \lambda_i \log(\lambda_i).$$
+\end{definition}
+
+\begin{definition}[Decreasing Vector]
+\label{def:decreasing_vector}
+A vector $x \in \mathbb{R}^n$ is called \emph{decreasing} if its coordinates are ordered
+$$x_1 \geq x_2 \geq \cdots \geq x_n.$$
+Given any $x \in \mathbb{R}^n$, we write $x^{\downarrow}$ for the vector obtained by rearranging the coordinates of $x$ in decreasing order.
 \end{definition}
 
 \begin{definition}[Majorization Ordering]
@@ -68,28 +80,38 @@ That is, $f$ preserves the majorization ordering.
 
 \bigskip
 
-\begin{lemma}
+\subsection*{Auxiliary Results}
+
+\noindent In this subsection we record the auxiliary results needed for the proof of Lemma~1. 
+We first establish Schur-convexity of the map $x \mapsto \sum_i x_i \log(x_i)$, and then prove a spectral estimate showing that high fidelity forces the existence of a large eigenvalue.
+
+\begin{proposition}
 \label{lem:slope_comparison}
 \lean{slope_comparison_tlogt}
 \leanok
-For $f(t) = t \cdot \log(t)$, if $a \geq c$, $b \geq d$, $a \neq b$, $c \neq d$, then:
-$$\frac{f(c) - f(d)}{c - d} \leq \frac{f(a) - f(b)}{a - b}$$
-\end{lemma}
+Let $f(t) = t \log(t)$ for $t \geq 0$, where we set $f(0) = 0$. For any $a, b, c, d \in [0,\infty)$ satisfying $a \geq c$, $b \geq d$, $a \neq b$, and $c \neq d$, we have
+$$\frac{f(c) - f(d)}{c - d} \leq \frac{f(a) - f(b)}{a - b}.$$
+\end{proposition}
 
-\begin{lemma}
+\begin{proof}
+This is a standard consequence of the convexity of $f(t) = t \log(t)$.
+\end{proof}
+
+\begin{proposition}
 \label{lem:schur_reduction}
 \lean{schur_convex_reduction_to_distinct}
 \leanok
 \uses{lem:slope_comparison}
-For decreasing vectors $x, y$ with $x_i \neq y_i$ for all $i$, if $x \preceq y$ then:
-$$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i)$$
-\end{lemma}
+Let $x, y \in \mathbb{R}^n$ be decreasing vectors with $x_i \neq y_i$ for all $i$. 
+If $x \preceq y$, then:
+$$\sum_i x_i \log(x_i) \leq \sum_i y_i \log(y_i).$$
+\end{proposition}
 
 \begin{proof}
 For $f(t) = t \log(t)$, define the secant slopes:
 $$c_i := \frac{f(x_i) - f(y_i)}{x_i - y_i} = \frac{x_i \log(x_i) - y_i \log(y_i)}{x_i - y_i}$$
 
-By Lemma~\ref{lem:slope_comparison} (convexity of $f$), these slopes are monotonically non-decreasing:
+By Lemma~\ref{lem:slope_comparison} (convexity of $f$), these slopes are monotonically non-increasing:
 $$c_{i+1} \leq c_i \quad \text{for all } i \in \{1, \ldots, n-1\}$$
 
 Using the telescoping identity $x_i = \left(\sum_{j \leq i} x_j\right) - \left(\sum_{j < i} x_j\right)$, we rewrite:
@@ -99,26 +121,26 @@ Using the telescoping identity $x_i = \left(\sum_{j \leq i} x_j\right) - \left(\
 &= \sum_{i=1}^n c_i \left[\left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) - \left(\sum_{j < i} x_j - \sum_{j < i} y_j\right)\right]
 \end{align*}
 
-By majorization, $\sum_{j \leq k} x_j \geq \sum_{j \leq k} y_j$ for all $k < n$, and equality holds at $k = n$ by normalization.
+By majorization, $\sum_{j \leq k} x_j \leq \sum_{j \leq k} y_j$ for all $k < n$, and equality holds at $k = n$ by normalization.
 
 Expanding the telescoping sum and using the boundary condition (the term at $i = n$ vanishes):
 \begin{align*}
 \sum_{i=1}^n c_i (x_i - y_i) 
 &= \sum_{i=1}^{n-1} (c_i - c_{i+1}) \left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) \\
-&\geq 0
+&\leq 0
 \end{align*}
 
 The final inequality holds because $(c_i - c_{i+1}) \geq 0$ (slopes non-increasing) and 
-$\left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) \geq 0$ (majorization).
+$\left(\sum_{j \leq i} x_j - \sum_{j \leq i} y_j\right) \leq 0$ (majorization), so their product is non-positive.
 \end{proof}
 
-\begin{theorem}
+\begin{proposition}
 \label{thm:schur_convex_xlogx}
 \lean{schur_convex_xlogx}
 \leanok
 \uses{lem:schur_reduction}
-The entropy function $f(x) = \sum_i x_i \log(x_i)$ is Schur-convex.
-\end{theorem}
+The function $f(x) = \sum_i x_i \log(x_i)$ is Schur-convex.
+\end{proposition}
 
 \begin{proof}
 We first reduce to decreasing vectors by sorting, which preserves both the majorization relation and the function value. 
@@ -128,29 +150,38 @@ removal process reduces to the case where $x_i \neq y_i$ for all $i$, to which L
 directly.
 \end{proof}
 
-\begin{lemma}[Eigenvalue Bound from Inner Product]
+\noindent We now turn to the spectral estimate that links high fidelity with the existence of a large eigenvalue.
+In particular, it formalizes the observation that a large expectation value $\langle v, \rho v \rangle$ forces the spectrum of $\rho$ to have a correspondingly large eigenvalue.
+
+\begin{proposition}[Eigenvalue Bound from Inner Product]
 \label{lem:eigenvalue_bound}
 \lean{eigenvalue_bound_eigenbasis}
 \leanok
 Let $\rho$ be a Hermitian matrix and $v$ a unit vector with $\|v\| = 1$. 
 If $\langle v, \rho v \rangle > C$, then $\rho$ has an eigenvalue $\lambda_i > C$.
-\end{lemma}
+\end{proposition}
 
 \bigskip
+\bigskip
 
-\begin{theorem}
+\subsection*{Proof of Lemma~1}
+
+\noindent Combining these ingredients, we obtain the following entropy bound, which formalizes Lemma~1 of Lo--Chau (1998).
+
+\begin{lemma}
 \label{thm:main}
 \lean{high_fidelity_implies_low_entropy_equivalent}
 \leanok
 \uses{def:vonNeumannEntropy, thm:schur_convex_xlogx, lem:eigenvalue_bound}
-Let $\rho$ be an $R \times R$ positive semidefinite density matrix with trace 1.
-If there exists a unit vector $v$ such that $\langle v, \rho v \rangle > 1 - \delta$ where $0 \leq \delta < 1$ and $\delta \leq (R-1)/R$, then:
-$$S(\rho) \leq -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right)$$
-\end{theorem}
+Let $\rho$ be an $R \times R$ positive semidefinite density matrix with trace $1$.
+If there exists a unit vector $v$ such that $\langle v, \rho v \rangle > 1 - \delta$ where $0 \leq \delta < 1$ and $\delta \leq (R-1)/R$, 
+then the von Neumann entropy of $\rho$ satisfies
+$$S(\rho) \leq -(1-\delta)\log(1-\delta) - \delta \log\left(\frac{\delta}{R-1}\right).$$
+\end{lemma}
 
 \begin{proof}
 \uses{lem:eigenvalue_bound, thm:schur_convex_xlogx}
-The proof proceeds in 9 steps:
+For clarity, the proof is organized into 9 short steps:
 
 \textbf{Step 1: Eigenvalue Bound from High Fidelity.}
 From the hypothesis $\langle v, \rho v \rangle > 1 - \delta$, we apply 
@@ -159,7 +190,7 @@ Lemma~\ref{lem:eigenvalue_bound} to conclude that at least one eigenvalue $\lamb
 \textbf{Step 2: Eigenvalue Non-negativity.}
 Since $\rho$ is positive semidefinite, all eigenvalues are non-negative: $\lambda_i \geq 0$ for all $i$.
 
-\textbf{Step 3: Construct Comparison Distribution.}
+\textbf{Step 3: Construction of the Comparison Eigenvalue Distribution.}
 Define a comparison eigenvalue distribution $\lambda_{\text{comp}}$:
 $$\lambda_{\text{comp}}(i) = \begin{cases}
 1 - \delta & \text{if } i = 0 \\
@@ -180,19 +211,15 @@ where $\sigma, \tau$ are sorting permutations
 \end{enumerate}
 The proof uses case analysis ($k=0$ vs $k>0$) with a proof by contradiction for the $k>0$ case.
 
-\textbf{Step 6: Apply Schur-Convexity (Payoff).}
+\textbf{Step 6: Application of Schur-Convexity.}
 Using Theorem~\ref{thm:schur_convex_xlogx} and the majorization from Step 5:
 $$\sum_i \lambda_i \log(\lambda_i) \geq \sum_i \lambda_{\text{comp}}(i) \log(\lambda_{\text{comp}}(i))$$
 
-\textbf{Step 7: Unfold Entropy Definition.}
-By Definition~\ref{def:vonNeumannEntropy}:
-$$S(\rho) = -\sum_i \lambda_i \log(\lambda_i)$$
-
-\textbf{Step 8: Compute Comparison Entropy.}
+\textbf{Step 7: Compute Comparison Entropy.}
 Direct calculation yields:
 $$\sum_i \lambda_{\text{comp}}(i) \log(\lambda_{\text{comp}}(i)) = (1-\delta)\log(1-\delta) + \delta \log\left(\frac{\delta}{R-1}\right)$$
 
-\textbf{Step 9: Final Calculation.}
+\textbf{Step 8: Final Calculation.}
 Combining all steps:
 \begin{align*}
 S(\rho) &= -\sum_i \lambda_i \log(\lambda_i) \\
@@ -203,9 +230,11 @@ S(\rho) &= -\sum_i \lambda_i \log(\lambda_i) \\
 
 \bigskip
 
-\noindent\textbf{Remark:} The original paper assumes $\delta \ll 1$, but for rigorous formalization we require 
-$\delta \leq \frac{R-1}{R}$. This ensures $\frac{\delta}{R-1} \leq 1 - \delta$, which guarantees the comparison 
-distribution $\lambda_{\text{comp}}$ is properly ordered with one dominant eigenvalue. Without this constraint, 
-the majorization argument fails. Since $\frac{R-1}{R} \to 1$ as $R \to \infty$, this constraint is nearly equivalent 
-to $\delta < 1$ for large systems and is always satisfied in practical QKD where $\delta \ll 1$.
+\noindent\textbf{Remarks:}
+
+\noindent\textbf{(1) Notation.} In our formalization, $R$ denotes the dimension of the Hilbert space, corresponding to $2^{2R}$ in Lo \& Chau's notation (where $R$ represents the number of singlet pairs).
+
+\medskip
+
+\noindent\textbf{(2) Constraint on $\delta$.} The original paper requires $\delta \ll 1$. Our formalization makes this precise: we require $\delta \leq \frac{R-1}{R}$ to ensure the comparison distribution has decreasing eigenvalues. Since $\frac{R-1}{R} \to 1$ as $R \to \infty$, this constraint is satisfied for large systems with $\delta \ll 1$.
 
