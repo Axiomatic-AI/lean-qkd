@@ -36,32 +36,15 @@ jobs:
       - name: Build project
         run: ~/.elan/bin/lake build QKD
 
-      - name: Cache API docs
-        uses: actions/cache@v4
-        with:
-          path: |
-            .lake/build/doc/Aesop
-            .lake/build/doc/Batteries
-            .lake/build/doc/find
-            .lake/build/doc/Init
-            .lake/build/doc/Lake
-            .lake/build/doc/Lean
-            .lake/build/doc/Mathlib
-            .lake/build/doc/Std
-          key: Docs-${{ hashFiles('lake-manifest.json') }}
-
-      - name: Build project API documentation
-        run: ~/.elan/bin/lake -R -Kenv=dev build QKD:docs
-      
       - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
         id: check_home_page
         run: |
           if [ -d home_page ]; then
             echo "The 'home_page' folder exists in the repository."
-            echo "HOME_PAGE_EXISTS=true" >> $GITHUB_ENV
+            echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "The 'home_page' folder does not exist in the repository."
-            echo "HOME_PAGE_EXISTS=false" >> $GITHUB_ENV
+            echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Build blueprint and copy to `home_page/blueprint`
@@ -89,14 +72,6 @@ jobs:
         run: |
             ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
 
-      - name: Copy API documentation to `home_page/docs`
-        run: cp -r .lake/build/doc home_page/docs
-
-      - name: Remove unnecessary lake files from documentation in `home_page/docs`
-        run: |
-          find home_page/docs -name "*.trace" -delete
-          find home_page/docs -name "*.hash" -delete
-
       - name: Bundle dependencies
         uses: ruby/setup-ruby@v1
         with:
@@ -105,21 +80,18 @@ jobs:
           bundler-cache: true  # Enable caching for bundler
 
       - name: Build website using Jekyll
-        if: env.HOME_PAGE_EXISTS == 'true'
+        if: steps.check_home_page.outputs.exists == 'true'
         working-directory: home_page
         env:
           JEKYLL_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: JEKYLL_ENV=production bundle exec jekyll build  # Note this will also copy the blueprint and API doc into home_page/_site
+        run: JEKYLL_ENV=production bundle exec jekyll build
 
-      - name: "Upload website (API documentation, blueprint and any home page)"
+      - name: "Upload website"
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ env.HOME_PAGE_EXISTS == 'true' && 'home_page/_site' || 'home_page/' }}
+          path: ${{ steps.check_home_page.outputs.exists == 'true' && 'home_page/_site' || 'home_page/' }}
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Make sure the API documentation cache works
-        run: mv home_page/docs .lake/build/doc
      
