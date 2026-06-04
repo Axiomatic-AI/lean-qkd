@@ -39,6 +39,9 @@ jobs:
       - name: Build project
         run: ~/.elan/bin/lake build QKD
 
+      - name: Build project API documentation
+        run: ~/.elan/bin/lake -R -Kenv=dev build QKD:docs
+
       - name: Check for `home_page` folder # this is meant to detect a Jekyll-based website
         id: check_home_page
         run: |
@@ -74,6 +77,14 @@ jobs:
       - name: Check declarations mentioned in the blueprint exist in Lean code
         run: |
             ~/.elan/bin/lake exe checkdecls blueprint/lean_decls
+
+      - name: Copy API documentation to `home_page/docs`
+        run: cp -r .lake/build/doc home_page/docs
+
+      - name: Remove unnecessary lake files from documentation in `home_page/docs`
+        run: |
+          find home_page/docs -name "*.trace" -delete
+          find home_page/docs -name "*.hash" -delete
 
       - name: Bundle dependencies
         uses: ruby/setup-ruby@v1

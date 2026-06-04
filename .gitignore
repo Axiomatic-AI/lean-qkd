@@ -16,6 +16,7 @@ blueprint/web
 blueprint/print
 home_page/_site
 home_page/blueprint
+home_page/docs
 home_page/vendor
 
 # Keep source files
